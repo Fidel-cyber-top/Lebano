@@ -1,0 +1,304 @@
+{
+  "name": "FidelinvestigatorAI - Enhanced AI Edition",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "investigate",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// HTML Parser - Estrae dati da report OSINT\nconst html = $input.first().json.html_content;\n\n// Regex patterns\nconst emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/g;\nconst phonePattern = /(?:\\+?[0-9]{1,3}[-. ]?)?(?:\\([0-9]{1,4}\\)[-. ]?)?[0-9]{1,4}[-. ]?[0-9]{1,4}[-. ]?[0-9]{1,9}/g;\nconst usernamePattern = /@([a-zA-Z0-9_]{3,30})/g;\nconst ipPattern = /\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b/g;\n\n// Estrai dati\nconst textContent = html.replace(/<[^>]*>/g, ' ');\n\nconst emails = [...new Set(textContent.match(emailPattern) || [])];\nconst phones = [...new Set((textContent.match(phonePattern) || []).filter(p => p.replace(/\\D/g, '').length >= 8))];\nconst usernames = [...new Set((textContent.match(usernamePattern) || []).map(u => u.replace('@', '')))];\nconst ips = [...new Set(textContent.match(ipPattern) || [])];\n\n// Estrai social profiles da link\nconst socialPatterns = {\n  'facebook.com': 'Facebook',\n  'twitter.com': 'Twitter',\n  'x.com': 'Twitter/X',\n  'instagram.com': 'Instagram',\n  'linkedin.com': 'LinkedIn',\n  'tiktok.com': 'TikTok',\n  'github.com': 'GitHub'\n};\n\nconst socialProfiles = [];\nconst linkPattern = /href=[\"']([^\"']*)[\"']/g;\nlet match;\nwhile ((match = linkPattern.exec(html)) !== null) {\n  for (const [domain, platform] of Object.entries(socialPatterns)) {\n    if (match[1].includes(domain)) {\n      socialProfiles.push({\n        platform: platform,\n        url: match[1],\n        username: match[1].split('/').pop()\n      });\n    }\n  }\n}\n\n// Estrai password\nconst passwordPatterns = [\n  /password[:\\s]+([^\\s<>\"']{4,30})/gi,\n  /pass[:\\s]+([^\\s<>\"']{4,30})/gi\n];\n\nconst passwords = [];\nfor (const pattern of passwordPatterns) {\n  const matches = textContent.match(pattern) || [];\n  passwords.push(...matches.map(m => m.split(/[:\\s]+/)[1]));\n}\n\n// Estrai data breach info\nconst breaches = [];\nconst breachKeywords = ['breach', 'leak', 'dump', 'hack', 'compromised'];\nfor (const keyword of breachKeywords) {\n  if (textContent.toLowerCase().includes(keyword)) {\n    breaches.push({ source: keyword, detected: true });\n  }\n}\n\nreturn {\n  json: {\n    extracted_data: {\n      emails: emails,\n      phones: phones,\n      usernames: usernames,\n      ips: ips,\n      social_profiles: socialProfiles,\n      passwords: [...new Set(passwords)],\n      breaches: breaches\n    },\n    metadata: {\n      extraction_time: new Date().toISOString(),\n      email_count: emails.length,\n      social_count: socialProfiles.length,\n      breach_count: breaches.length,\n      password_count: passwords.length\n    }\n  }\n};"
+      },
+      "id": "html-parser",
+      "name": "1. HTML Parser",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.perplexity.ai/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.1-sonar-large-128k-online\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Sei un analista OSINT senior con esperienza in intelligence gathering. Il tuo compito è verificare e arricchire le informazioni fornite cercando dati pubblici aggiuntivi. Rispondi in italiano con un'analisi professionale. NON inventare informazioni.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Analizza questi identificatori digitali e cerca informazioni pubbliche aggiuntive:\\n\\nEmail: {{ $json.extracted_data.emails.join(', ') }}\\nUsername: {{ $json.extracted_data.usernames.join(', ') }}\\nSocial Profiles: {{ $json.extracted_data.social_profiles.map(p => p.platform + ': ' + p.username).join(', ') }}\\n\\nFornisci:\\n1. Verifica delle identità collegate\\n2. Presenza online aggiuntiva\\n3. Potenziali rischi di sicurezza\\n4. Connessioni o pattern identificabili\"\n    }\n  ],\n  \"temperature\": 0.1,\n  \"max_tokens\": 4000\n}",
+        "options": {}
+      },
+      "id": "perplexity-osint",
+      "name": "2. Perplexity OSINT Verification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "perplexity-api",
+          "name": "Perplexity API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-4-turbo-preview",
+        "messages": {
+          "values": [
+            {
+              "content": "=Sei un analista di intelligence specializzato in correlazione dati e pattern recognition. Analizza i dati forniti per identificare connessioni nascoste, pattern comportamentali, e anomalie. Rispondi in italiano con analisi professionale e dettagliata."
+            },
+            {
+              "content": "=DATI TARGET:\\n\\nEmail: {{ $('1. HTML Parser').item.json.extracted_data.emails.join(', ') }}\\nUsername: {{ $('1. HTML Parser').item.json.extracted_data.usernames.join(', ') }}\\nProfili Social: {{ $('1. HTML Parser').item.json.extracted_data.social_profiles.length }}\\nPassword Esposte: {{ $('1. HTML Parser').item.json.extracted_data.passwords.length }}\\n\\nVERIFICA PERPLEXITY:\\n{{ $('2. Perplexity OSINT Verification').item.json.choices[0].message.content }}\\n\\nEsegui analisi di correlazione:\\n1. CORRELAZIONE IDENTITÀ - Collega tutti gli identificatori\\n2. PATTERN TEMPORALI - Ricostruisci timeline attività\\n3. ANALISI RISCHIO - Valuta rischio complessivo e vettori attacco\\n4. RACCOMANDAZIONI INVESTIGATIVE"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.2,
+          "maxTokens": 4000
+        }
+      },
+      "id": "openai-correlation",
+      "name": "3. OpenAI Data Correlation",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [850, 200],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-api",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "claude-3-opus-20240229",
+        "messages": {
+          "values": [
+            {
+              "content": "Sei uno psicologo forense e profiler comportamentale con 25 anni di esperienza presso FBI, CIA e servizi di intelligence europei. La tua specializzazione include profilazione psicologica basata su tracce digitali, analisi comportamentale del Big Five (OCEAN), e threat assessment. Fornisci analisi basate SOLO sui dati forniti. Rispondi in italiano."
+            },
+            {
+              "content": "=DATI COMPORTAMENTALI TARGET:\\n\\nPiattaforme: {{ $('1. HTML Parser').item.json.extracted_data.social_profiles.map(p => p.platform).join(', ') }}\\nUsername: {{ $('1. HTML Parser').item.json.extracted_data.usernames.join(', ') }}\\nEmail: {{ $('1. HTML Parser').item.json.extracted_data.emails.join(', ') }}\\nPassword esposte: {{ $('1. HTML Parser').item.json.extracted_data.passwords.length }}\\nData breach: {{ $('1. HTML Parser').item.json.extracted_data.breaches.length }}\\n\\nCORRELAZIONE OPENAI:\\n{{ $('3. OpenAI Data Correlation').item.json.message.content }}\\n\\nGenera PROFILO PSICOLOGICO COMPLETO:\\n\\n1. ANALISI BIG FIVE (OCEAN) con score 0-100 e confidenza\\n2. PATTERN COMPORTAMENTALI dedotti\\n3. PROFILO RISCHIO e vulnerabilità psicologiche\\n4. THREAT ASSESSMENT\\n5. CONCLUSIONI PROFILER con punti chiave"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 4000
+        }
+      },
+      "id": "anthropic-profiler",
+      "name": "4. Anthropic Psychological Profile",
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [1050, 200],
+      "credentials": {
+        "anthropicApi": {
+          "id": "anthropic-api",
+          "name": "Anthropic API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Password Analyzer\nconst data = $('1. HTML Parser').first().json.extracted_data;\nconst passwords = data.passwords || [];\n\nconst KEYBOARD_PATTERNS = ['qwerty', 'asdfgh', 'zxcvbn', '123456', '654321'];\nconst COMMON_WORDS = ['password', 'admin', 'login', 'welcome', 'master'];\n\nfunction analyzePassword(pwd) {\n  const patterns = [];\n  let score = 100;\n  \n  // Length check\n  if (pwd.length < 8) {\n    score -= 30;\n    patterns.push('troppo_corta');\n  } else if (pwd.length < 12) {\n    score -= 10;\n  }\n  \n  // Complexity\n  const hasUpper = /[A-Z]/.test(pwd);\n  const hasLower = /[a-z]/.test(pwd);\n  const hasDigit = /\\d/.test(pwd);\n  const hasSpecial = /[!@#$%^&*(),.?\":{}|<>]/.test(pwd);\n  \n  const complexity = [hasUpper, hasLower, hasDigit, hasSpecial].filter(Boolean).length;\n  if (complexity < 2) {\n    score -= 25;\n    patterns.push('bassa_complessità');\n  }\n  \n  // Keyboard patterns\n  const pwdLower = pwd.toLowerCase();\n  for (const pattern of KEYBOARD_PATTERNS) {\n    if (pwdLower.includes(pattern)) {\n      score -= 20;\n      patterns.push('keyboard_pattern');\n      break;\n    }\n  }\n  \n  // Common words\n  for (const word of COMMON_WORDS) {\n    if (pwdLower.includes(word)) {\n      score -= 25;\n      patterns.push('parola_comune');\n      break;\n    }\n  }\n  \n  // Repeated characters\n  if (/(.)\\1{2,}/.test(pwd)) {\n    score -= 15;\n    patterns.push('caratteri_ripetuti');\n  }\n  \n  return {\n    masked: pwd.length > 4 ? pwd.slice(0, 2) + '*'.repeat(pwd.length - 4) + pwd.slice(-2) : '****',\n    length: pwd.length,\n    complexity: complexity,\n    score: Math.max(0, score),\n    patterns: patterns,\n    level: score >= 80 ? 'ECCELLENTE' : score >= 60 ? 'BUONO' : score >= 40 ? 'MEDIO' : score >= 20 ? 'BASSO' : 'CRITICO'\n  };\n}\n\nconst analyses = passwords.map(pwd => analyzePassword(pwd));\nconst avgScore = analyses.length > 0 \n  ? analyses.reduce((sum, a) => sum + a.score, 0) / analyses.length \n  : 100;\n\nconst allPatterns = analyses.flatMap(a => a.patterns);\nconst recommendations = [];\n\nif (allPatterns.includes('troppo_corta')) recommendations.push('Utilizzare password di almeno 12 caratteri');\nif (allPatterns.includes('bassa_complessità')) recommendations.push('Includere maiuscole, numeri e caratteri speciali');\nif (allPatterns.includes('keyboard_pattern')) recommendations.push('Evitare sequenze di tastiera prevedibili');\nif (allPatterns.includes('parola_comune')) recommendations.push('Non utilizzare parole comuni');\n\nreturn {\n  json: {\n    password_analysis: {\n      total: passwords.length,\n      individual: analyses,\n      average_score: Math.round(avgScore),\n      overall_level: avgScore >= 80 ? 'ECCELLENTE' : avgScore >= 60 ? 'BUONO' : avgScore >= 40 ? 'MEDIO' : avgScore >= 20 ? 'BASSO' : 'CRITICO',\n      common_patterns: [...new Set(allPatterns)],\n      recommendations: recommendations\n    }\n  }\n};"
+      },
+      "id": "password-analyzer",
+      "name": "5. Password Analyzer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Security Assessor\nconst data = $('1. HTML Parser').first().json.extracted_data;\nconst metadata = $('1. HTML Parser').first().json.metadata;\nconst pwdAnalysis = $('5. Password Analyzer').first().json.password_analysis;\n\nconst vulnerabilities = [];\nconst threats = [];\nlet score = 100;\n\n// Email exposure\nif (data.emails.length > 0) {\n  vulnerabilities.push({\n    type: 'EMAIL_EXPOSURE',\n    severity: 'MEDIA',\n    count: data.emails.length,\n    description: `${data.emails.length} indirizzi email esposti pubblicamente`\n  });\n  score -= data.emails.length * 5;\n}\n\n// Data breaches\nif (data.breaches.length > 0) {\n  vulnerabilities.push({\n    type: 'DATA_BREACH',\n    severity: 'ALTA',\n    count: data.breaches.length,\n    description: `Presente in ${data.breaches.length} data breach`\n  });\n  score -= data.breaches.length * 15;\n  threats.push('Credential Stuffing Attack');\n}\n\n// Password exposure\nif (data.passwords.length > 0) {\n  vulnerabilities.push({\n    type: 'PASSWORD_EXPOSURE',\n    severity: 'CRITICA',\n    count: data.passwords.length,\n    description: `${data.passwords.length} password esposte in chiaro`\n  });\n  score -= 30;\n  threats.push('Account Takeover');\n  threats.push('Identity Theft');\n}\n\n// Large digital footprint\nif (data.social_profiles.length > 5) {\n  vulnerabilities.push({\n    type: 'LARGE_DIGITAL_FOOTPRINT',\n    severity: 'MEDIA',\n    count: data.social_profiles.length,\n    description: 'Ampia presenza social aumenta superficie di attacco'\n  });\n  score -= 10;\n  threats.push('Social Engineering');\n  threats.push('Spear Phishing');\n}\n\n// Calculate grade\nlet grade;\nif (score >= 90) grade = 'A';\nelse if (score >= 80) grade = 'B';\nelse if (score >= 70) grade = 'C';\nelse if (score >= 60) grade = 'D';\nelse grade = 'F';\n\n// Exposure level\nlet exposureLevel;\nif (score <= 20) exposureLevel = 'CRITICO';\nelse if (score <= 40) exposureLevel = 'ALTO';\nelse if (score <= 60) exposureLevel = 'MODERATO';\nelse if (score <= 80) exposureLevel = 'BASSO';\nelse exposureLevel = 'MINIMO';\n\nconst recommendations = [];\nif (vulnerabilities.some(v => v.type === 'PASSWORD_EXPOSURE')) {\n  recommendations.push('URGENTE: Cambiare immediatamente tutte le password esposte');\n  recommendations.push('Attivare autenticazione a due fattori');\n}\nif (vulnerabilities.some(v => v.type === 'DATA_BREACH')) {\n  recommendations.push('Verificare credenziali su tutti gli account compromessi');\n}\nif (threats.includes('Social Engineering')) {\n  recommendations.push('Aumentare consapevolezza su tecniche di social engineering');\n}\n\nreturn {\n  json: {\n    security_assessment: {\n      score: Math.max(0, score),\n      grade: grade,\n      exposure_level: exposureLevel,\n      vulnerabilities: vulnerabilities,\n      threats: [...new Set(threats)],\n      recommendations: recommendations,\n      digital_footprint_score: 100 - Math.max(0, score)\n    }\n  }\n};"
+      },
+      "id": "security-assessor",
+      "name": "6. Security Assessor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 400]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "claude-3-opus-20240229",
+        "messages": {
+          "values": [
+            {
+              "content": "Sei un senior intelligence analyst che redige report investigativi per agenzie governative. Il tuo stile deve essere professionale, oggettivo, preciso e senza ambiguità. Ogni affermazione deve essere supportata dai dati. Rispondi in italiano."
+            },
+            {
+              "content": "=DATI INVESTIGAZIONE:\\n\\nEmail: {{ $('1. HTML Parser').item.json.extracted_data.emails.join(', ') }}\\nUsername: {{ $('1. HTML Parser').item.json.extracted_data.usernames.join(', ') }}\\nSocial Profiles: {{ $('1. HTML Parser').item.json.extracted_data.social_profiles.length }}\\nPassword Esposte: {{ $('1. HTML Parser').item.json.extracted_data.passwords.length }}\\nSecurity Grade: {{ $('6. Security Assessor').item.json.security_assessment.grade }}\\nExposure Level: {{ $('6. Security Assessor').item.json.security_assessment.exposure_level }}\\n\\nANALISI CORRELAZIONE:\\n{{ $('3. OpenAI Data Correlation').item.json.message.content.substring(0, 1500) }}\\n\\nPROFILO PSICOLOGICO:\\n{{ $('4. Anthropic Psychological Profile').item.json.message.content.substring(0, 1500) }}\\n\\nGenera le sezioni narrative per il report investigativo:\\n\\n1. EXECUTIVE_SUMMARY (3-4 paragrafi) - Sintesi esecutiva principali findings\\n2. CORRELATION_NARRATIVE (4-5 paragrafi) - Narrazione dettagliata correlazione dati\\n3. CONCLUSIONS (3-4 paragrafi) - Conclusioni investigazione e next steps\\n\\nFormatta come JSON con chiavi: executive_summary, correlation_narrative, conclusions"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.2,
+          "maxTokens": 4000
+        }
+      },
+      "id": "anthropic-narrative",
+      "name": "7. Anthropic Report Narrative",
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [1250, 300],
+      "credentials": {
+        "anthropicApi": {
+          "id": "anthropic-api",
+          "name": "Anthropic API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregatore finale - Combina tutti i risultati\nconst htmlData = $('1. HTML Parser').first().json;\nconst perplexityResult = $('2. Perplexity OSINT Verification').first().json;\nconst openaiCorrelation = $('3. OpenAI Data Correlation').first().json;\nconst psychProfile = $('4. Anthropic Psychological Profile').first().json;\nconst pwdAnalysis = $('5. Password Analyzer').first().json;\nconst securityAssessment = $('6. Security Assessor').first().json;\nconst narrative = $('7. Anthropic Report Narrative').first().json;\n\n// Parse narrative JSON\nlet narrativeData = {};\ntry {\n  const jsonMatch = narrative.message.content.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    narrativeData = JSON.parse(jsonMatch[0]);\n  }\n} catch (e) {\n  narrativeData = {\n    executive_summary: narrative.message.content.substring(0, 500),\n    correlation_narrative: 'Vedere sezione dati per dettagli.',\n    conclusions: 'Conclusioni basate sui dati raccolti.'\n  };\n}\n\nconst finalReport = {\n  report_metadata: {\n    title: 'REPORT INFO INVESTIGATIVO',\n    generated_at: new Date().toISOString(),\n    generated_by: 'FidelinvestigatorAI - Enhanced AI Edition',\n    ai_providers: ['Perplexity', 'OpenAI GPT-4', 'Anthropic Claude'],\n    confidence_level: 'ALTA'\n  },\n  \n  executive_summary: narrativeData.executive_summary || '',\n  \n  extracted_data: htmlData.extracted_data,\n  extraction_metadata: htmlData.metadata,\n  \n  osint_verification: {\n    provider: 'Perplexity AI',\n    result: perplexityResult.choices?.[0]?.message?.content || 'N/A',\n    timestamp: new Date().toISOString()\n  },\n  \n  correlation_analysis: {\n    provider: 'OpenAI GPT-4',\n    result: openaiCorrelation.message?.content || 'N/A',\n    narrative: narrativeData.correlation_narrative || ''\n  },\n  \n  psychological_profile: {\n    provider: 'Anthropic Claude',\n    result: psychProfile.message?.content || 'N/A'\n  },\n  \n  password_analysis: pwdAnalysis.password_analysis,\n  \n  security_assessment: securityAssessment.security_assessment,\n  \n  conclusions: narrativeData.conclusions || '',\n  \n  risk_summary: {\n    security_grade: securityAssessment.security_assessment.grade,\n    exposure_level: securityAssessment.security_assessment.exposure_level,\n    security_score: securityAssessment.security_assessment.score,\n    total_vulnerabilities: securityAssessment.security_assessment.vulnerabilities.length,\n    total_threats: securityAssessment.security_assessment.threats.length\n  }\n};\n\nreturn { json: finalReport };"
+      },
+      "id": "aggregator",
+      "name": "8. Report Aggregator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "response",
+      "name": "Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "1. HTML Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. HTML Parser": {
+      "main": [
+        [
+          {
+            "node": "2. Perplexity OSINT Verification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "5. Password Analyzer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Perplexity OSINT Verification": {
+      "main": [
+        [
+          {
+            "node": "3. OpenAI Data Correlation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. OpenAI Data Correlation": {
+      "main": [
+        [
+          {
+            "node": "4. Anthropic Psychological Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Anthropic Psychological Profile": {
+      "main": [
+        [
+          {
+            "node": "7. Anthropic Report Narrative",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Password Analyzer": {
+      "main": [
+        [
+          {
+            "node": "6. Security Assessor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. Security Assessor": {
+      "main": [
+        [
+          {
+            "node": "7. Anthropic Report Narrative",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7. Anthropic Report Narrative": {
+      "main": [
+        [
+          {
+            "node": "8. Report Aggregator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8. Report Aggregator": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
