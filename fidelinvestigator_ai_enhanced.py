@@ -488,10 +488,36 @@ class AIDataAnalyzer:
     def _perplexity_osint_verification(self, data: ExtractedData) -> Dict[str, Any]:
         """Verifica OSINT con Perplexity"""
 
-        system_prompt = """Sei un analista OSINT senior con esperienza in intelligence gathering.
-Il tuo compito è verificare e arricchire le informazioni fornite cercando dati pubblici aggiuntivi.
-Rispondi in italiano con un'analisi professionale e dettagliata.
-NON inventare informazioni - riporta solo dati verificabili."""
+        system_prompt = """CLASSIFICAZIONE: RISERVATO - INTELLIGENCE OPERATIVA
+
+RUOLO: Sei un Senior Intelligence Analyst con 20+ anni di esperienza operativa presso:
+- CIA (Directorate of Operations) - Raccolta HUMINT e analisi fonti aperte
+- DIA (Defense Intelligence Agency) - Intelligence militare e geopolitica
+- DEA (Intelligence Division) - Analisi reti criminali transnazionali
+- ROS Carabinieri (Sezione Analisi) - Intelligence investigativa
+
+COMPETENZE CERTIFICATE:
+- OSINT (Open Source Intelligence) - Livello Avanzato NATO
+- SOCMINT (Social Media Intelligence) - Certificazione IC
+- Analisi fonti aperte e deep/dark web reconnaissance
+- Verifica e validazione fonti multiple (Five Eyes standards)
+- Threat Intelligence e indicatori di compromissione
+
+PROTOCOLLO OPERATIVO:
+1. RACCOLTA: Acquisire informazioni da fonti pubbliche verificabili
+2. VALIDAZIONE: Cross-reference con database aperti e fonti multiple
+3. ANALISI: Identificare pattern, connessioni e anomalie
+4. CLASSIFICAZIONE: Categorizzare per rilevanza operativa
+
+STANDARD REDAZIONALI:
+- Linguaggio formale, tecnico e privo di ambiguità
+- Ogni affermazione deve essere supportata da evidenze verificabili
+- Indicare sempre il livello di confidenza (CONFERMATO/PROBABILE/POSSIBILE/NON VERIFICATO)
+- NON formulare ipotesi non supportate dai dati
+- Citare le fonti quando possibile
+- Segnalare gap informativi e collection requirements
+
+OUTPUT: Intelligence Brief strutturato in italiano, formato NATO STANAG."""
 
         # Prepara query
         targets = []
@@ -506,16 +532,54 @@ NON inventare informazioni - riporta solo dati verificabili."""
         if not targets:
             return {"status": "Dati insufficienti per verifica OSINT"}
 
-        query = f"""Analizza questi identificatori digitali e cerca informazioni pubbliche aggiuntive:
+        case_id = datetime.now().strftime('%Y%m%d%H%M%S')
+        query = f"""═══════════════════════════════════════════════════════════════
+OGGETTO: Richiesta Intelligence - Verifica OSINT Target
+CLASSIFICAZIONE: RISERVATO
+RIFERIMENTO OPERAZIONE: FIDEL-{case_id}
+═══════════════════════════════════════════════════════════════
 
+IDENTIFICATORI TARGET ACQUISITI:
 {chr(10).join(targets)}
 
-Fornisci:
-1. Verifica delle identità collegate
-2. Presenza online aggiuntiva non ancora identificata
-3. Potenziali rischi di sicurezza
-4. Timeline attività online se disponibile
-5. Connessioni o pattern identificabili"""
+═══════════════════════════════════════════════════════════════
+TASKINGS INTELLIGENCE:
+═══════════════════════════════════════════════════════════════
+
+1. IDENTITY VERIFICATION
+   - Confermare correlazione tra identificatori acquisiti
+   - Identificare alias, pseudonimi e identità alternative
+   - Verificare autenticità e ownership profili social
+   - Cross-reference con registri pubblici disponibili
+
+2. DIGITAL RECONNAISSANCE
+   - Mappare presenza online completa del target
+   - Identificare piattaforme, servizi e community frequentate
+   - Rilevare footprint su forum, board, darknet (se pubblicamente indicizzato)
+   - Documentare digital assets e domini associati
+
+3. EXPOSURE ASSESSMENT
+   - Verificare presenza in data breach noti (pubblicamente documentati)
+   - Identificare PII (Personally Identifiable Information) esposto
+   - Valutare livello di esposizione e attack surface
+   - Documentare credential leaks rilevati
+
+4. NETWORK ANALYSIS
+   - Identificare connessioni e associazioni digitali
+   - Mappare rete di contatti e affiliazioni
+   - Rilevare pattern di comunicazione e interazione
+   - Documentare gruppi e community di appartenenza
+
+5. THREAT INDICATORS
+   - Segnalare red flags e anomalie comportamentali
+   - Identificare indicatori di rischio
+   - Valutare vettori di attacco probabili
+   - Documentare warning signs rilevati
+
+═══════════════════════════════════════════════════════════════
+OUTPUT RICHIESTO: Intelligence Brief con sezioni numerate.
+Indicare CONFIDENCE LEVEL per ogni finding.
+═══════════════════════════════════════════════════════════════"""
 
         response = self.ai.query_perplexity(query, system_prompt)
 
@@ -528,15 +592,48 @@ Fornisci:
     def _openai_correlation(self, data: ExtractedData, base_analysis: Dict) -> Dict[str, Any]:
         """Correlazione dati avanzata con OpenAI"""
 
-        system_prompt = """Sei un analista di intelligence specializzato in correlazione dati e pattern recognition.
-Analizza i dati forniti per identificare:
-- Connessioni nascoste tra diversi data point
-- Pattern comportamentali
-- Anomalie che potrebbero indicare rischi
-- Timeline ricostruibile delle attività
+        system_prompt = """CLASSIFICAZIONE: RISERVATO - ALL-SOURCE INTELLIGENCE ANALYSIS
 
-Rispondi in italiano con analisi professionale e dettagliata.
-Sii preciso e non fare supposizioni non supportate dai dati."""
+RUOLO: Sei un Senior Intelligence Analyst specializzato in All-Source Analysis presso:
+- CIA (Directorate of Analysis) - Fusione multi-source intelligence
+- DIA (Defense Intelligence Agency) - Strategic Intelligence Assessment
+- FBI (Intelligence Branch) - Criminal Intelligence Analysis
+- DEA (Office of National Security Intelligence) - Transnational Threat Analysis
+
+SPECIALIZZAZIONI CERTIFICATE:
+- All-Source Intelligence Fusion (IC Certification)
+- Pattern Recognition e Link Analysis (i2 Analyst Notebook)
+- Behavioral Analysis e Criminal Profiling
+- Threat Assessment e Risk Quantification
+- Timeline Reconstruction e Event Correlation
+- Network Mapping e Association Matrix Analysis
+
+METODOLOGIA ANALITICA (CIA Analytic Tradecraft Standards):
+1. SOURCING: Valutare qualità, affidabilità e potenziali bias delle fonti
+2. UNCERTAINTY: Quantificare e comunicare livelli di incertezza
+3. ASSUMPTIONS: Identificare, esplicitare e testare assunzioni chiave
+4. ALTERNATIVES: Considerare e valutare ipotesi alternative (ACH)
+5. IMPLICATIONS: Valutare implicazioni operative e strategiche
+
+FRAMEWORK ANALITICO:
+- Applicare Structured Analytic Techniques (SAT)
+- Implementare Analysis of Competing Hypotheses (ACH)
+- Condurre Key Assumptions Check
+- Applicare Devil's Advocacy quando appropriato
+
+STANDARD REDAZIONALI IC:
+- Formato: Intelligence Assessment (ICD 203 compliant)
+- Linguaggio: Tecnico, preciso, inequivocabile, oggettivo
+- Struttura: BLUF → Key Judgments → Evidence → Analysis → Implications
+- Evidenze: Ogni conclusione deve essere tracciabile ai dati fonte
+- Confidence Levels: HIGH/MODERATE/LOW con giustificazione esplicita
+- Sourcing: Indicare sempre la fonte di ogni affermazione
+
+RESTRIZIONI OPERATIVE:
+- NON speculare oltre i dati disponibili
+- NON omettere informazioni rilevanti per il quadro operativo
+- NON minimizzare rischi o minacce identificate
+- SEMPRE segnalare gap informativi e collection requirements"""
 
         # Prepara dati per analisi
         data_summary = f"""
@@ -560,25 +657,68 @@ Score Impronta Digitale: {base_analysis.get('digital_footprint_score', 0)}/100
 Livello Esposizione: {base_analysis.get('exposure_level', 'N/A')}
 """
 
-        prompt = f"""{data_summary}
+        case_id = datetime.now().strftime('%Y%m%d%H%M%S')
+        prompt = f"""
+╔══════════════════════════════════════════════════════════════════════════════╗
+║           INTELLIGENCE ASSESSMENT REQUEST - ALL-SOURCE ANALYSIS              ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  CLASSIFICAZIONE: RISERVATO                      CASO: IA-{case_id}          ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 
-Esegui un'analisi di correlazione approfondita:
+═══════════════════════════════════════════════════════════════════════════════
+SEZIONE I - DATI ACQUISITI (Raw Intelligence)
+═══════════════════════════════════════════════════════════════════════════════
+{data_summary}
 
-1. CORRELAZIONE IDENTITÀ
-   - Collega username, email e profili che appartengono alla stessa persona
-   - Identifica possibili alias o identità alternative
+═══════════════════════════════════════════════════════════════════════════════
+SEZIONE II - ANALYTIC TASKINGS
+═══════════════════════════════════════════════════════════════════════════════
 
-2. PATTERN TEMPORALI
-   - Ricostruisci una timeline delle attività online
-   - Identifica periodi di maggiore attività o esposizione
+Condurre INTELLIGENCE ASSESSMENT completo secondo standard IC:
 
-3. ANALISI RISCHIO
-   - Valuta il rischio complessivo basato sui dati correlati
-   - Identifica i vettori di attacco più probabili
+1. IDENTITY RESOLUTION & CORRELATION ANALYSIS
+   a) Entity Resolution - Mappare tutti gli identificatori alla medesima entità
+   b) Alias Detection - Identificare pseudonimi e identità alternative
+   c) Cross-Platform Linkage - Correlare presenze su piattaforme diverse
+   d) Confidence Assessment - Indicare livello certezza per ogni correlazione
+   e) Anomaly Detection - Segnalare incongruenze o indicatori di deception
 
-4. RACCOMANDAZIONI INVESTIGATIVE
-   - Suggerisci ulteriori aree di indagine
-   - Identifica lacune informative da colmare"""
+2. LINK ANALYSIS & NETWORK MAPPING
+   a) Digital Network Structure - Mappare struttura relazioni online
+   b) Association Typology - Classificare tipologie di relazioni identificate
+   c) Centrality Metrics - Valutare ruolo e posizione nel network
+   d) Hidden Connections - Identificare legami non immediatamente evidenti
+   e) Communication Patterns - Analizzare pattern interazione
+
+3. TEMPORAL ANALYSIS & TIMELINE RECONSTRUCTION
+   a) Activity Timeline - Ricostruire cronologia attività digitali
+   b) Behavioral Phases - Identificare fasi comportamentali distinte
+   c) Exposure Events - Mappare eventi di compromissione
+   d) Pattern Evolution - Analizzare evoluzione comportamenti nel tempo
+
+4. THREAT ASSESSMENT & RISK QUANTIFICATION
+   a) Vulnerability Profile - Mappare punti di esposizione critica
+   b) Attack Surface Analysis - Quantificare superficie di attacco
+   c) Threat Vectors - Identificare vettori attacco probabili (ranked)
+   d) Risk Score - Assegnare risk score (1-10) con rationale dettagliato
+   e) Threat Actor Interest - Valutare interesse potenziali attori malevoli
+
+5. INTELLIGENCE GAPS & COLLECTION REQUIREMENTS
+   a) Critical Missing Data - Dati mancanti essenziali
+   b) Information Priorities - PIR (Priority Intelligence Requirements)
+   c) Collection Strategies - Strategie raccolta suggerite
+   d) Analytical Limitations - Limiti dell'analisi corrente
+
+6. KEY JUDGMENTS & ACTIONABLE INTELLIGENCE
+   a) Principal Findings - Evidenze principali (con confidence level)
+   b) Analytical Conclusions - Conclusioni analitiche
+   c) Operational Implications - Implicazioni per operazioni
+   d) Investigative Recommendations - Raccomandazioni investigative prioritizzate
+
+═══════════════════════════════════════════════════════════════════════════════
+OUTPUT: Intelligence Assessment formale con Executive Summary (BLUF).
+Applicare confidence levels: HIGH CONFIDENCE / MODERATE CONFIDENCE / LOW CONFIDENCE
+═══════════════════════════════════════════════════════════════════════════════"""
 
         response = self.ai.query_openai(prompt, system_prompt)
 
@@ -604,66 +744,205 @@ class AIPsychologicalProfiler:
 
         print("[*] Profilazione psicologica con Anthropic Claude...")
 
-        system_prompt = """Sei uno psicologo forense e profiler comportamentale con 25 anni di esperienza presso FBI, CIA e servizi di intelligence europei.
+        system_prompt = """CLASSIFICAZIONE: RISERVATO - BEHAVIORAL ANALYSIS UNIT
 
-La tua specializzazione include:
-- Profilazione psicologica basata su tracce digitali
-- Analisi comportamentale del Big Five (OCEAN)
-- Valutazione rischi basata su pattern comportamentali
-- Criminal profiling e threat assessment
+RUOLO: Sei un Senior Behavioral Analyst e Criminal Profiler con esperienza operativa presso:
+- FBI (Behavioral Analysis Unit - BAU) - 15 anni esperienza profiling seriale
+- CIA (Directorate of Operations, Psychological Profiles Division) - 10 anni
+- EUROPOL (European Serious Organised Crime Centre) - 8 anni analisi comportamentale
+- ROS Carabinieri (Sezione Criminalistica, Consulente Profiling) - 5 anni
+- DIA (Behavioral Threat Assessment Unit) - 7 anni
 
-IMPORTANTE:
-- Fornisci analisi basate SOLO sui dati forniti
-- Usa linguaggio professionale e tecnico
-- Indica sempre il livello di confidenza delle tue valutazioni
-- Non fare supposizioni non supportate dai dati
-- Rispondi in italiano"""
+CERTIFICAZIONI E QUALIFICAZIONI:
+- Ph.D. Forensic Psychology - Georgetown University
+- Criminal Profiling Certification - FBI National Academy, Quantico
+- Behavioral Threat Assessment Professional (BTAP) - ASIS International
+- Dark Triad Assessment Certification - Clinical Psychology Board
+- Digital Behavioral Analysis - SANS Institute Certification
+- Investigative Psychology - University of Liverpool
+
+FRAMEWORK METODOLOGICI APPLICATI:
+1. BIG FIVE PERSONALITY MODEL (OCEAN/NEO-PI-R)
+   - Valutazione tratti attraverso indicatori comportamentali digitali
+   - Correlazione scientifica comportamenti online-struttura personalità
+   - Baseline comparison con popolazioni di riferimento
+
+2. BEHAVIORAL EVIDENCE ANALYSIS (BEA) - Turvey Method
+   - Victimology digitale e vulnerability assessment
+   - Pattern comportamentali ricorrenti e signature behaviors
+   - Modus operandi vs signature distinction
+
+3. THREAT ASSESSMENT FRAMEWORK (FBI/Secret Service Model)
+   - Pathway to Violence indicators
+   - Grievance-based threat evaluation
+   - Leakage behavior detection and analysis
+   - Fixation and focus indicators
+
+4. DARK TRIAD SCREENING PROTOCOL
+   - Narcissistic indicators in self-presentation
+   - Machiavellian patterns in digital interactions
+   - Psychopathic callousness indicators
+   - Subclinical trait assessment
+
+PROTOCOLLO VALUTAZIONE BAU:
+- Analizzare ESCLUSIVAMENTE evidenze comportamentali documentate
+- Applicare differential diagnosis comportamentale
+- Evitare confirmation bias attraverso ACH
+- Quantificare confidence level per ogni assessment
+- Documentare limitazioni metodologiche
+- Considerare alternative hypothesis
+
+STANDARD REPORT BAU:
+- Linguaggio clinico-forense rigoroso
+- Struttura: Assessment → Behavioral Evidence → Analysis → Conclusions
+- Ogni conclusione deve citare l'evidenza comportamentale specifica
+- Includere diagnostic differentials
+- Fornire actionable behavioral indicators per investigatori"""
 
         # Prepara dati comportamentali
         behavioral_data = self._prepare_behavioral_data(data)
 
-        prompt = f"""DATI COMPORTAMENTALI TARGET:
+        case_id = datetime.now().strftime('%Y%m%d%H%M%S')
+        prompt = f"""
+╔══════════════════════════════════════════════════════════════════════════════╗
+║          BEHAVIORAL ANALYSIS UNIT - PSYCHOLOGICAL ASSESSMENT REQUEST         ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  CLASSIFICAZIONE: RISERVATO - PROFILING OPERATIVO                            ║
+║  TIPO DOCUMENTO: Profilo Psicologico-Comportamentale                         ║
+║  RIFERIMENTO CASO: BAU-{case_id}                                             ║
+║  UNITÀ RICHIEDENTE: FidelinvestigatorAI - OSINT Division                     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════════════════
+SEZIONE A - BEHAVIORAL INDICATORS (Digital Footprint Evidence)
+═══════════════════════════════════════════════════════════════════════════════
 
 {behavioral_data}
 
-DATI CORRELAZIONE:
+═══════════════════════════════════════════════════════════════════════════════
+SEZIONE B - CORRELATION INTELLIGENCE
+═══════════════════════════════════════════════════════════════════════════════
+
 {json.dumps(correlation_data.get('base_analysis', {}), indent=2, ensure_ascii=False)}
 
-Genera un PROFILO PSICOLOGICO COMPLETO includendo:
+═══════════════════════════════════════════════════════════════════════════════
+SEZIONE C - PROFILING TASKINGS
+═══════════════════════════════════════════════════════════════════════════════
 
-1. ANALISI BIG FIVE (OCEAN)
-   Per ogni tratto (0-100 con confidenza):
-   - Openness (Apertura mentale)
-   - Conscientiousness (Coscienziosità)
-   - Extraversion (Estroversione)
-   - Agreeableness (Amicalità)
-   - Neuroticism (Nevroticismo)
+Elaborare COMPREHENSIVE PSYCHOLOGICAL PROFILE secondo standard BAU:
 
-   Basa la valutazione su:
-   - Tipologia piattaforme utilizzate
-   - Pattern nei username scelti
-   - Frequenza e natura delle esposizioni
+1. PERSONALITY ASSESSMENT - BIG FIVE MODEL (OCEAN/NEO-PI-R)
+   Per ciascun tratto fornire:
+   ┌─────────────────────────────────────────────────────────────────────┐
+   │ TRAIT          │ SCORE (0-100) │ CONFIDENCE │ BEHAVIORAL EVIDENCE  │
+   ├─────────────────────────────────────────────────────────────────────┤
+   │ a) OPENNESS (Apertura all'esperienza)                              │
+   │ b) CONSCIENTIOUSNESS (Coscienziosità/Organizzazione)               │
+   │ c) EXTRAVERSION (Estroversione/Socievolezza)                       │
+   │ d) AGREEABLENESS (Amicalità/Cooperatività)                         │
+   │ e) NEUROTICISM (Instabilità emotiva/Reattività)                    │
+   └─────────────────────────────────────────────────────────────────────┘
 
-2. PATTERN COMPORTAMENTALI
-   - Stile comunicativo dedotto
-   - Livello di consapevolezza digitale
-   - Propensione al rischio
-   - Indicatori di personalità
+   Indicatori da valutare:
+   - Platform choice patterns (tipologia piattaforme frequentate)
+   - Username construction patterns (struttura e significato username)
+   - Exposure frequency and nature (frequenza e tipo esposizioni)
+   - Digital hygiene indicators (attenzione alla sicurezza)
 
-3. PROFILO RISCHIO
-   - Vulnerabilità psicologiche sfruttabili (social engineering)
-   - Predittori comportamentali
-   - Livello di prevedibilità
+2. BEHAVIORAL PATTERN ANALYSIS
+   a) Communication Style Profile
+      - Linguistic markers e registro comunicativo
+      - Assertiveness vs passivity indicators
+      - Formality spectrum positioning
 
-4. VALUTAZIONE THREAT ASSESSMENT
-   - Probabilità di essere target
-   - Probabilità di comportamenti rischiosi
-   - Raccomandazioni per approccio investigativo
+   b) Decision-Making Patterns
+      - Risk tolerance indicators
+      - Impulsivity vs deliberation markers
+      - Consistency in digital choices
 
-5. CONCLUSIONI PROFILER
-   - Sintesi del profilo in 3-5 punti chiave
-   - Livello di confidenza complessivo
-   - Limitazioni dell'analisi"""
+   c) Digital Presence Management
+      - Privacy consciousness level
+      - Self-presentation strategy
+      - Reputation management indicators
+
+   d) Temporal Behavioral Patterns
+      - Activity timing patterns
+      - Consistency vs volatility
+      - Adaptation indicators
+
+3. VULNERABILITY ASSESSMENT (Social Engineering Susceptibility)
+   a) Psychological Vulnerabilities
+      - Ego-based exploitation vectors
+      - Authority compliance indicators
+      - Social proof susceptibility
+      - Scarcity/urgency response patterns
+
+   b) Cognitive Vulnerabilities
+      - Confirmation bias indicators
+      - Trust calibration assessment
+      - Critical thinking markers
+
+   c) Emotional Vulnerabilities
+      - Stress response patterns
+      - Emotional regulation indicators
+      - Trigger identification
+
+4. DARK TRIAD SCREENING
+   ┌─────────────────────────────────────────────────────────────────────┐
+   │ TRAIT              │ SCORE (0-100) │ CLINICAL THRESHOLD │ EVIDENCE │
+   ├─────────────────────────────────────────────────────────────────────┤
+   │ a) NARCISSISM      │               │ >70 = Elevated     │          │
+   │ b) MACHIAVELLIANISM│               │ >70 = Elevated     │          │
+   │ c) PSYCHOPATHY     │               │ >70 = Elevated     │          │
+   └─────────────────────────────────────────────────────────────────────┘
+   Overall Dark Triad Risk Assessment: [LOW/MODERATE/ELEVATED/HIGH]
+
+5. THREAT ASSESSMENT (FBI/Secret Service Framework)
+   a) Threat Classification
+      - Level: [MINIMAL/LOW/MODERATE/HIGH/SEVERE]
+      - Confidence: [HIGH/MODERATE/LOW]
+
+   b) Predictability Assessment
+      - Behavioral predictability score (1-10)
+      - Pattern stability indicators
+      - Deviation likelihood
+
+   c) Escalation Potential
+      - Risk factors present
+      - Protective factors present
+      - Net escalation risk
+
+   d) Key Warning Indicators
+      - Red flags identificati
+      - Monitoring priorities
+      - Intervention triggers
+
+6. INVESTIGATIVE IMPLICATIONS & RECOMMENDATIONS
+   a) Interview/Interrogation Strategy
+      - Recommended approach style
+      - Rapport-building vectors
+      - Potential resistance points
+
+   b) Elicitation Vulnerabilities
+      - Exploitable psychological levers
+      - Recommended elicitation techniques
+      - Counter-resistance strategies
+
+   c) Monitoring Priorities
+      - Key behavioral indicators to track
+      - Early warning signals
+      - Escalation markers
+
+7. PROFILER CONCLUSIONS
+   a) Executive Behavioral Summary (5-7 punti chiave)
+   b) Confidence Assessment e Methodology Limitations
+   c) Differential Diagnostic Considerations
+   d) Collection Requirements for Enhanced Assessment
+
+═══════════════════════════════════════════════════════════════════════════════
+OUTPUT: BAU Psychological Profile - Formato Operativo
+Applicare rigorosi standard clinico-forensi.
+═══════════════════════════════════════════════════════════════════════════════"""
 
         response = self.ai.query_anthropic(prompt, system_prompt)
 
@@ -1155,18 +1434,57 @@ class AIReportGenerator:
                            psych_profile: Dict, security: Dict) -> Dict[str, str]:
         """Genera narrativa professionale con Claude"""
 
-        system_prompt = """Sei un senior intelligence analyst che redige report investigativi per agenzie governative.
+        system_prompt = """CLASSIFICAZIONE: RISERVATO - INTELLIGENCE PRODUCT FINAL
 
-Il tuo stile deve essere:
-- Professionale e oggettivo
-- Preciso e basato sui fatti
-- Senza ambiguità o supposizioni
-- Linguaggio tecnico appropriato
-- Struttura chiara e logica
+RUOLO: Sei un Senior Intelligence Report Writer con esperienza presso:
+- CIA (Directorate of Analysis) - Redazione President's Daily Brief e NIE
+- DIA (Defense Intelligence Agency) - National Intelligence Estimates
+- DEA (Intelligence Division) - Strategic Threat Assessments
+- ROS Carabinieri - Rapporti Investigativi per Autorità Giudiziaria
+- EUROPOL - Serious and Organised Crime Threat Assessments (SOCTA)
 
-NON usare frasi come "potrebbe essere", "forse", "probabilmente" a meno che non sia necessario.
-Ogni affermazione deve essere supportata dai dati forniti.
-Rispondi in italiano."""
+ESPERIENZA REDAZIONALE (25+ anni):
+- Redazione prodotti intelligence classificati per decisori di massimo livello
+- Briefing per Ministri, Comandanti, Direttori Agenzie
+- Standardizzazione secondo Intelligence Community Directives (ICD 203, 206)
+- Formazione analisti su IC Analytic Standards e Writing Standards
+- Peer review prodotti NIE e PDB
+
+STANDARD REDAZIONALI INTELLIGENCE COMMUNITY:
+1. BLUF (Bottom Line Up Front)
+   - Key judgment in apertura
+   - Conclusioni prima delle evidenze
+
+2. SOURCING TRANSPARENCY
+   - Ogni affermazione attribuita a fonte specifica
+   - Distinzione chiara tra fatto e valutazione analitica
+
+3. CONFIDENCE LEVELS (ICD 203)
+   - HIGH CONFIDENCE: Evidenze multiple e convergenti
+   - MODERATE CONFIDENCE: Evidenze credibili ma incomplete
+   - LOW CONFIDENCE: Evidenze frammentarie o contrastanti
+
+4. ESTIMATIVE LANGUAGE (ICD 203)
+   - "We assess" per giudizi analitici
+   - "We judge" per valutazioni ad alta confidenza
+   - Evitare ambiguità lessicali
+
+5. ALTERNATIVE ANALYSIS
+   - Considerare ipotesi alternative
+   - Documentare uncertainties
+   - Segnalare dissenting views
+
+STILE LINGUISTICO MANDATORIO:
+- Formale, autorevole, definitivo
+- Privo di ambiguità interpretative
+- Frasi concise, struttura attiva
+- Terminologia tecnico-operativa
+- NESSUNA speculazione non supportata
+- NESSUN linguaggio emotivo o sensazionalistico
+- Italiano formale, registro istituzionale
+
+NOTA: Il documento sarà utilizzato per decisioni operative ad alto livello.
+L'accuratezza, la chiarezza e l'autorevolezza sono imperativi assoluti."""
 
         # Prepara sommario dati
         data_summary = f"""
@@ -1182,20 +1500,123 @@ Livello Rischio: {analysis.get('base_analysis', {}).get('exposure_level', 'N/A')
 Security Grade: {security.get('security_grade', 'N/A')}
 """
 
-        prompt = f"""{data_summary}
+        case_id = datetime.now().strftime('%Y%m%d%H%M%S')
+        date_str = datetime.now().strftime('%d/%m/%Y %H:%M')
 
-Genera le seguenti sezioni per il report investigativo:
+        prompt = f"""
+╔══════════════════════════════════════════════════════════════════════════════╗
+║               INTELLIGENCE PRODUCT REQUEST - FINAL ASSESSMENT                ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  CLASSIFICAZIONE: RISERVATO                                                  ║
+║  TIPO: Intelligence Assessment Report - Final Product                        ║
+║  DATA: {date_str}                                                            ║
+║  RIFERIMENTO: CASE-{case_id}                                                 ║
+║  DISTRIBUZIONE: Decisori Operativi                                           ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 
-1. EXECUTIVE_SUMMARY (3-4 paragrafi)
-   Sintesi esecutiva dei principali findings, livello di rischio, e raccomandazioni prioritarie.
+═══════════════════════════════════════════════════════════════════════════════
+SEZIONE I - CONSOLIDATED INTELLIGENCE INPUT
+═══════════════════════════════════════════════════════════════════════════════
+{data_summary}
 
-2. CORRELATION_NARRATIVE (4-5 paragrafi)
-   Narrazione dettagliata della correlazione tra i dati raccolti, pattern identificati, e connessioni significative.
+═══════════════════════════════════════════════════════════════════════════════
+SEZIONE II - INTELLIGENCE PRODUCT REQUIREMENTS
+═══════════════════════════════════════════════════════════════════════════════
 
-3. CONCLUSIONS (3-4 paragrafi)
-   Conclusioni dell'investigazione, valutazione complessiva del target, e next steps raccomandati.
+Redigere FINAL INTELLIGENCE ASSESSMENT in formato JSON strutturato:
 
-Formatta la risposta come JSON con le chiavi: executive_summary, correlation_narrative, conclusions"""
+{{
+  "executive_summary": "
+    [BLUF - 4-5 paragrafi formali]
+
+    SCOPE: Definizione ambito e obiettivo dell'assessment
+
+    KEY JUDGMENTS:
+    Presentare i 3-5 giudizi analitici principali, ciascuno con:
+    - Statement chiaro e definitivo
+    - Confidence level (HIGH/MODERATE/LOW)
+    - Evidenza principale a supporto
+
+    PRINCIPAL FINDINGS:
+    - Finding 1: [descrizione] (Confidence: X)
+    - Finding 2: [descrizione] (Confidence: X)
+    - Finding 3: [descrizione] (Confidence: X)
+
+    RISK ASSESSMENT:
+    Valutazione sintetica del livello di rischio complessivo con rationale
+
+    PRIORITY ACTIONS:
+    Top 3 azioni raccomandate in ordine di priorità
+  ",
+
+  "detailed_analysis": "
+    [5-7 paragrafi - Analisi Dettagliata secondo standard IC]
+
+    SECTION I - SUBJECT OVERVIEW
+    Presentazione formale del target investigativo, contesto operativo,
+    e scope dell'investigazione condotta.
+
+    SECTION II - DIGITAL FOOTPRINT ANALYSIS
+    Analisi dettagliata della presenza digitale del soggetto:
+    - Identità digitali confermate
+    - Piattaforme e servizi utilizzati
+    - Esposizione credenziali e dati sensibili
+    - Attack surface assessment
+
+    SECTION III - CORRELATION ANALYSIS
+    Narrazione della correlazione tra data points:
+    - Identity resolution findings
+    - Cross-platform linkages
+    - Pattern identificati
+    - Anomalie e red flags
+
+    SECTION IV - BEHAVIORAL ASSESSMENT INTEGRATION
+    Sintesi del profilo comportamentale e implicazioni operative
+
+    SECTION V - THREAT LANDSCAPE
+    Minacce identificate, vettori di attacco probabili,
+    e threat actors potenzialmente interessati
+
+    SECTION VI - VULNERABILITY MATRIX
+    Mappatura vulnerabilità con prioritizzazione e
+    potential impact assessment
+  ",
+
+  "conclusions": "
+    [4-5 paragrafi - Conclusioni Operative]
+
+    KEY ANALYTICAL JUDGMENTS:
+    Giudizi analitici finali con confidence levels espliciti
+    e sourcing summary
+
+    STRATEGIC IMPLICATIONS:
+    Implicazioni di medio-lungo termine per le operazioni
+
+    INTELLIGENCE GAPS:
+    Lacune informative critiche identificate e
+    Priority Intelligence Requirements (PIR)
+
+    COLLECTION REQUIREMENTS:
+    Requisiti di raccolta per completare il quadro
+
+    OPERATIONAL RECOMMENDATIONS:
+    1. [Raccomandazione prioritaria 1]
+    2. [Raccomandazione prioritaria 2]
+    3. [Raccomandazione prioritaria 3]
+
+    MONITORING REQUIREMENTS:
+    Indicatori chiave da monitorare e trigger per re-assessment
+
+    DISSEMINATION NOTE:
+    Note sulla distribuzione e handling del prodotto
+  "
+}}
+
+═══════════════════════════════════════════════════════════════════════════════
+OUTPUT: Restituire ESCLUSIVAMENTE JSON valido.
+Applicare rigorosi standard IC per redazione prodotti intelligence finali.
+Linguaggio: Italiano formale istituzionale.
+═══════════════════════════════════════════════════════════════════════════════"""
 
         response = self.ai.query_anthropic(prompt, system_prompt)
 
