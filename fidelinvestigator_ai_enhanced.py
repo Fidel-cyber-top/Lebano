@@ -51,17 +51,31 @@ import openai
 import anthropic
 import requests
 
-# Import Executive Report Generator for DOCX output
+# Import Executive Report Generator for DOCX output (Company-focused)
 try:
     from executive_report_generator import (
         ExecutiveReportGenerator,
         create_assessment_from_osint_data,
         AssessmentData
     )
-    DOCX_AVAILABLE = True
+    DOCX_COMPANY_AVAILABLE = True
 except ImportError:
-    DOCX_AVAILABLE = False
-    print("[!] executive_report_generator.py non trovato. Report DOCX disabilitato.")
+    DOCX_COMPANY_AVAILABLE = False
+    print("[!] executive_report_generator.py non trovato. Report DOCX aziende disabilitato.")
+
+# Import Personal Vulnerability Report Generator (Person-focused with Claude AI)
+try:
+    from personal_vulnerability_report import (
+        PersonalReportGenerator,
+        ClaudePersonalAnalyzer,
+        create_personal_assessment_from_osint,
+        generate_personal_report,
+        PersonalAssessmentData
+    )
+    DOCX_PERSONAL_AVAILABLE = True
+except ImportError:
+    DOCX_PERSONAL_AVAILABLE = False
+    print("[!] personal_vulnerability_report.py non trovato. Report DOCX persone disabilitato.")
 
 # ============================================================================
 # CONFIGURAZIONE
@@ -2006,7 +2020,7 @@ class FidelinvestigatorAI:
         self._check_api_keys()
 
         # Parse HTML
-        print("\n[1/7] Parsing dati OSINT...")
+        print("\n[1/8] Parsing dati OSINT...")
         if os.path.isfile(html_input):
             data = self.parser.parse_file(html_input)
         else:
@@ -2018,28 +2032,28 @@ class FidelinvestigatorAI:
         print(f"      Passwords: {len(data.passwords)}")
 
         # AI-Enhanced Analysis
-        print("\n[2/7] Analisi e correlazione dati...")
+        print("\n[2/8] Analisi e correlazione dati...")
         analysis = self.analyzer.analyze(data)
 
         # AI Psychological Profile
-        print("\n[3/7] Profilazione psicologica...")
+        print("\n[3/8] Profilazione psicologica...")
         psych_profile = self.profiler.profile(data, analysis)
 
         # Password Analysis
-        print("\n[4/7] Analisi password...")
+        print("\n[4/8] Analisi password...")
         password_analysis = self.password_analyzer.analyze(
             data.passwords,
             data.personal_info
         )
 
         # Security Assessment
-        print("\n[5/7] Valutazione sicurezza...")
+        print("\n[5/8] Valutazione sicurezza...")
         security_assessment = self.security_assessor.assess(
             data, analysis, password_analysis
         )
 
         # Generate Report
-        print("\n[6/7] Generazione report PDF...")
+        print("\n[6/8] Generazione report PDF...")
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_path = os.path.join(output_dir, f"report_investigativo_{timestamp}.pdf")
 
@@ -2053,23 +2067,24 @@ class FidelinvestigatorAI:
             logo_path=self.config.LOGO_PATH
         )
 
-        # Generate DOCX Executive Report
-        docx_path = None
-        if DOCX_AVAILABLE:
-            print("\n[7/7] Generazione Executive Vulnerability Assessment (DOCX)...")
-            docx_path = os.path.join(output_dir, f"executive_assessment_{timestamp}.docx")
+        # Prepare extracted dict for DOCX generators
+        extracted_dict = {
+            'emails': list(data.contact_info.emails) if data.contact_info else [],
+            'usernames': list(data.usernames),
+            'phones': list(data.contact_info.phones) if data.contact_info else [],
+            'ips': list(data.ip_addresses),
+            'social_profiles': [asdict(p) if hasattr(p, '__dataclass_fields__') else p for p in data.social_profiles],
+            'passwords': list(data.passwords),
+            'breaches': [asdict(b) if hasattr(b, '__dataclass_fields__') else b for b in data.data_breaches]
+        }
+
+        # Generate DOCX Executive Report (Company-focused)
+        docx_company_path = None
+        if DOCX_COMPANY_AVAILABLE:
+            print("\n[7/8] Generazione Executive Assessment Aziende (DOCX)...")
+            docx_company_path = os.path.join(output_dir, f"executive_assessment_{timestamp}.docx")
 
             try:
-                # Convert data to dict format for integration
-                extracted_dict = {
-                    'emails': list(data.contact_info.emails) if data.contact_info else [],
-                    'usernames': list(data.usernames),
-                    'social_profiles': [asdict(p) if hasattr(p, '__dataclass_fields__') else p for p in data.social_profiles],
-                    'passwords': list(data.passwords),
-                    'breaches': [asdict(b) if hasattr(b, '__dataclass_fields__') else b for b in data.data_breaches]
-                }
-
-                # Create assessment data from OSINT results
                 assessment = create_assessment_from_osint_data(
                     extracted_data=extracted_dict,
                     analysis_data=analysis,
@@ -2078,25 +2093,64 @@ class FidelinvestigatorAI:
                     company_name=getattr(self.config, 'ORGANIZATION_NAME', 'Target Organization')
                 )
 
-                # Generate DOCX report
                 generator = ExecutiveReportGenerator()
-                generator.generate_report(assessment, docx_path)
+                generator.generate_report(assessment, docx_company_path)
 
-                print(f"      ✓ Report DOCX generato: {docx_path}")
+                print(f"      ✓ Report Aziende: {docx_company_path}")
 
             except Exception as e:
-                print(f"      ✗ Errore generazione DOCX: {e}")
-                docx_path = None
+                print(f"      ✗ Errore report aziende: {e}")
+                docx_company_path = None
+
+        # Generate Personal Vulnerability Assessment (Person-focused with Claude AI)
+        docx_personal_path = None
+        if DOCX_PERSONAL_AVAILABLE:
+            print("\n[8/8] Generazione Personal Vulnerability Assessment (Claude AI)...")
+            docx_personal_path = os.path.join(output_dir, f"personal_assessment_{timestamp}.docx")
+
+            try:
+                # Determina nome soggetto da email o username
+                subject_name = "Target Subject"
+                if data.usernames:
+                    subject_name = data.usernames[0]
+                elif data.contact_info.emails:
+                    email = list(data.contact_info.emails)[0]
+                    subject_name = email.split('@')[0].replace('.', ' ').replace('_', ' ').title()
+
+                print(f"      Soggetto: {subject_name}")
+                print(f"      Analisi con Anthropic Claude...")
+
+                # Generate report with Claude AI analysis
+                docx_personal_path = generate_personal_report(
+                    osint_data=extracted_dict,
+                    analysis_data=analysis,
+                    psych_profile=psych_profile,
+                    security_assessment=security_assessment,
+                    subject_name=subject_name,
+                    output_path=docx_personal_path,
+                    anthropic_api_key=self.config.ANTHROPIC_API_KEY
+                )
+
+                print(f"      ✓ Report Personale (Claude): {docx_personal_path}")
+
+            except Exception as e:
+                print(f"      ✗ Errore report personale: {e}")
+                import traceback
+                traceback.print_exc()
+                docx_personal_path = None
         else:
-            print("\n[7/7] Report DOCX non disponibile (modulo non installato)")
+            print("\n[8/8] Report Personale DOCX non disponibile (modulo non installato)")
 
         print("\n" + "=" * 60)
         print("INVESTIGAZIONE COMPLETATA")
         print("=" * 60)
-        print(f"\nReport PDF: {output_path}")
-        if docx_path:
-            print(f"Report DOCX: {docx_path}")
-        print(f"Security Grade: {security_assessment.get('security_grade', 'N/A')}")
+        print(f"\nReport generati:")
+        print(f"  PDF:              {output_path}")
+        if docx_company_path:
+            print(f"  DOCX (Aziende):   {docx_company_path}")
+        if docx_personal_path:
+            print(f"  DOCX (Personale): {docx_personal_path}")
+        print(f"\nSecurity Grade: {security_assessment.get('security_grade', 'N/A')}")
         print(f"Risk Level: {analysis.get('base_analysis', {}).get('exposure_level', 'N/A')}")
 
         return output_path
