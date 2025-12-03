@@ -51,6 +51,18 @@ import openai
 import anthropic
 import requests
 
+# Import Executive Report Generator for DOCX output
+try:
+    from executive_report_generator import (
+        ExecutiveReportGenerator,
+        create_assessment_from_osint_data,
+        AssessmentData
+    )
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
+    print("[!] executive_report_generator.py non trovato. Report DOCX disabilitato.")
+
 # ============================================================================
 # CONFIGURAZIONE
 # ============================================================================
@@ -1994,7 +2006,7 @@ class FidelinvestigatorAI:
         self._check_api_keys()
 
         # Parse HTML
-        print("\n[1/6] Parsing dati OSINT...")
+        print("\n[1/7] Parsing dati OSINT...")
         if os.path.isfile(html_input):
             data = self.parser.parse_file(html_input)
         else:
@@ -2006,28 +2018,28 @@ class FidelinvestigatorAI:
         print(f"      Passwords: {len(data.passwords)}")
 
         # AI-Enhanced Analysis
-        print("\n[2/6] Analisi e correlazione dati...")
+        print("\n[2/7] Analisi e correlazione dati...")
         analysis = self.analyzer.analyze(data)
 
         # AI Psychological Profile
-        print("\n[3/6] Profilazione psicologica...")
+        print("\n[3/7] Profilazione psicologica...")
         psych_profile = self.profiler.profile(data, analysis)
 
         # Password Analysis
-        print("\n[4/6] Analisi password...")
+        print("\n[4/7] Analisi password...")
         password_analysis = self.password_analyzer.analyze(
             data.passwords,
             data.personal_info
         )
 
         # Security Assessment
-        print("\n[5/6] Valutazione sicurezza...")
+        print("\n[5/7] Valutazione sicurezza...")
         security_assessment = self.security_assessor.assess(
             data, analysis, password_analysis
         )
 
         # Generate Report
-        print("\n[6/6] Generazione report PDF...")
+        print("\n[6/7] Generazione report PDF...")
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_path = os.path.join(output_dir, f"report_investigativo_{timestamp}.pdf")
 
@@ -2041,10 +2053,49 @@ class FidelinvestigatorAI:
             logo_path=self.config.LOGO_PATH
         )
 
+        # Generate DOCX Executive Report
+        docx_path = None
+        if DOCX_AVAILABLE:
+            print("\n[7/7] Generazione Executive Vulnerability Assessment (DOCX)...")
+            docx_path = os.path.join(output_dir, f"executive_assessment_{timestamp}.docx")
+
+            try:
+                # Convert data to dict format for integration
+                extracted_dict = {
+                    'emails': list(data.contact_info.emails) if data.contact_info else [],
+                    'usernames': list(data.usernames),
+                    'social_profiles': [asdict(p) if hasattr(p, '__dataclass_fields__') else p for p in data.social_profiles],
+                    'passwords': list(data.passwords),
+                    'breaches': [asdict(b) if hasattr(b, '__dataclass_fields__') else b for b in data.data_breaches]
+                }
+
+                # Create assessment data from OSINT results
+                assessment = create_assessment_from_osint_data(
+                    extracted_data=extracted_dict,
+                    analysis_data=analysis,
+                    psychological_profile=psych_profile,
+                    security_assessment=security_assessment,
+                    company_name=getattr(self.config, 'ORGANIZATION_NAME', 'Target Organization')
+                )
+
+                # Generate DOCX report
+                generator = ExecutiveReportGenerator()
+                generator.generate_report(assessment, docx_path)
+
+                print(f"      ✓ Report DOCX generato: {docx_path}")
+
+            except Exception as e:
+                print(f"      ✗ Errore generazione DOCX: {e}")
+                docx_path = None
+        else:
+            print("\n[7/7] Report DOCX non disponibile (modulo non installato)")
+
         print("\n" + "=" * 60)
         print("INVESTIGAZIONE COMPLETATA")
         print("=" * 60)
-        print(f"\nReport salvato: {output_path}")
+        print(f"\nReport PDF: {output_path}")
+        if docx_path:
+            print(f"Report DOCX: {docx_path}")
         print(f"Security Grade: {security_assessment.get('security_grade', 'N/A')}")
         print(f"Risk Level: {analysis.get('base_analysis', {}).get('exposure_level', 'N/A')}")
 
