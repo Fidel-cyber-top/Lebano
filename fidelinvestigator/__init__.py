@@ -12,12 +12,15 @@ Moduli:
 - password_analyzer: Analisi pattern costruzione password
 - security_assessor: Valutazione sicurezza online del target
 - report_generator: Generazione report PDF professionali
+- intelligence_report_framework: Framework Dutch OSINT Guy per report intelligence
+- intelligence_report_docx: Generatore DOCX per report intelligence
+- intelligence_integration: Integrazione framework intelligence con sistema OSINT
 
 Autore: FidelinvestigatorAI
-Versione: 1.0.0
+Versione: 2.0.0
 """
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"
 __author__ = "FidelinvestigatorAI"
 
 from .agent import FidelinvestigatorAI
@@ -28,12 +31,61 @@ from .password_analyzer import PasswordAnalyzer
 from .security_assessor import SecurityAssessor
 from .report_generator import ReportGenerator
 
+# Intelligence Report Framework (Dutch OSINT Guy Methodology)
+from .intelligence_report_framework import (
+    IntelligenceReportGenerator,
+    ACHAnalyzer,
+    SourceEvaluator,
+    BLUFGenerator,
+    ConfidenceLevel,
+    SourceReliability,
+    InformationAccuracy,
+    Source,
+    Hypothesis,
+    KeyJudgment,
+    EntityOfInterest,
+    EstimativeLanguage,
+    create_quick_report
+)
+
+from .intelligence_report_docx import (
+    IntelligenceReportDOCX,
+    generate_intelligence_report_docx
+)
+
+from .intelligence_integration import (
+    IntelligenceReportIntegration,
+    generate_dutch_osint_report
+)
+
 __all__ = [
+    # Core Agent
     "FidelinvestigatorAI",
+    # Parsers & Analyzers
     "OSINTHTMLParser",
     "DataAnalyzer",
     "PsychologicalProfiler",
     "PasswordAnalyzer",
     "SecurityAssessor",
-    "ReportGenerator"
+    "ReportGenerator",
+    # Intelligence Report Framework
+    "IntelligenceReportGenerator",
+    "ACHAnalyzer",
+    "SourceEvaluator",
+    "BLUFGenerator",
+    "ConfidenceLevel",
+    "SourceReliability",
+    "InformationAccuracy",
+    "Source",
+    "Hypothesis",
+    "KeyJudgment",
+    "EntityOfInterest",
+    "EstimativeLanguage",
+    "create_quick_report",
+    # DOCX Generation
+    "IntelligenceReportDOCX",
+    "generate_intelligence_report_docx",
+    # Integration
+    "IntelligenceReportIntegration",
+    "generate_dutch_osint_report"
 ]

@@ -77,6 +77,17 @@ except ImportError:
     DOCX_PERSONAL_AVAILABLE = False
     print("[!] personal_vulnerability_report.py non trovato. Report DOCX persone disabilitato.")
 
+# Import Intelligence Report Framework (Dutch OSINT Guy Methodology)
+try:
+    from fidelinvestigator.intelligence_integration import (
+        IntelligenceReportIntegration,
+        generate_dutch_osint_report
+    )
+    INTELLIGENCE_REPORT_AVAILABLE = True
+except ImportError:
+    INTELLIGENCE_REPORT_AVAILABLE = False
+    print("[!] Intelligence Report Framework non trovato. Report Intel disabilitato.")
+
 # ============================================================================
 # CONFIGURAZIONE
 # ============================================================================
@@ -2020,7 +2031,7 @@ class FidelinvestigatorAI:
         self._check_api_keys()
 
         # Parse HTML
-        print("\n[1/8] Parsing dati OSINT...")
+        print("\n[1/9] Parsing dati OSINT...")
         if os.path.isfile(html_input):
             data = self.parser.parse_file(html_input)
         else:
@@ -2032,28 +2043,28 @@ class FidelinvestigatorAI:
         print(f"      Passwords: {len(data.passwords)}")
 
         # AI-Enhanced Analysis
-        print("\n[2/8] Analisi e correlazione dati...")
+        print("\n[2/9] Analisi e correlazione dati...")
         analysis = self.analyzer.analyze(data)
 
         # AI Psychological Profile
-        print("\n[3/8] Profilazione psicologica...")
+        print("\n[3/9] Profilazione psicologica...")
         psych_profile = self.profiler.profile(data, analysis)
 
         # Password Analysis
-        print("\n[4/8] Analisi password...")
+        print("\n[4/9] Analisi password...")
         password_analysis = self.password_analyzer.analyze(
             data.passwords,
             data.personal_info
         )
 
         # Security Assessment
-        print("\n[5/8] Valutazione sicurezza...")
+        print("\n[5/9] Valutazione sicurezza...")
         security_assessment = self.security_assessor.assess(
             data, analysis, password_analysis
         )
 
         # Generate Report
-        print("\n[6/8] Generazione report PDF...")
+        print("\n[6/9] Generazione report PDF...")
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_path = os.path.join(output_dir, f"report_investigativo_{timestamp}.pdf")
 
@@ -2081,7 +2092,7 @@ class FidelinvestigatorAI:
         # Generate DOCX Executive Report (Company-focused)
         docx_company_path = None
         if DOCX_COMPANY_AVAILABLE:
-            print("\n[7/8] Generazione Executive Assessment Aziende (DOCX)...")
+            print("\n[7/9] Generazione Executive Assessment Aziende (DOCX)...")
             docx_company_path = os.path.join(output_dir, f"executive_assessment_{timestamp}.docx")
 
             try:
@@ -2105,7 +2116,7 @@ class FidelinvestigatorAI:
         # Generate Personal Vulnerability Assessment (Person-focused with Claude AI)
         docx_personal_path = None
         if DOCX_PERSONAL_AVAILABLE:
-            print("\n[8/8] Generazione Personal Vulnerability Assessment (Claude AI)...")
+            print("\n[8/9] Generazione Personal Vulnerability Assessment (Claude AI)...")
             docx_personal_path = os.path.join(output_dir, f"personal_assessment_{timestamp}.docx")
 
             try:
@@ -2139,17 +2150,61 @@ class FidelinvestigatorAI:
                 traceback.print_exc()
                 docx_personal_path = None
         else:
-            print("\n[8/8] Report Personale DOCX non disponibile (modulo non installato)")
+            print("\n[8/9] Report Personale DOCX non disponibile (modulo non installato)")
+
+        # Generate Intelligence Report (Dutch OSINT Guy Methodology)
+        intel_report_path = None
+        if INTELLIGENCE_REPORT_AVAILABLE:
+            print("\n[9/9] Generazione Intelligence Report (Dutch OSINT Guy Framework)...")
+            intel_report_path = os.path.join(output_dir, f"intelligence_report_{timestamp}.docx")
+
+            try:
+                # Determina nome soggetto se non già determinato
+                if 'subject_name' not in dir() or not subject_name:
+                    subject_name = "Target Subject"
+                    if data.usernames:
+                        subject_name = data.usernames[0]
+                    elif data.contact_info.emails:
+                        email = list(data.contact_info.emails)[0]
+                        subject_name = email.split('@')[0].replace('.', ' ').replace('_', ' ').title()
+
+                print(f"      Soggetto: {subject_name}")
+                print(f"      Framework: Dutch OSINT Guy Methodology")
+                print(f"      Standard: CIA/NATO Intelligence Cycle")
+
+                # Generate intelligence report
+                intel_report_path = generate_dutch_osint_report(
+                    osint_data=extracted_dict,
+                    analysis_data=analysis,
+                    psych_profile=psych_profile,
+                    security_assessment=security_assessment,
+                    subject_name=subject_name,
+                    output_path=intel_report_path,
+                    anthropic_api_key=self.config.ANTHROPIC_API_KEY,
+                    format="docx"
+                )
+
+                print(f"      ✓ Intelligence Report: {intel_report_path}")
+
+            except Exception as e:
+                print(f"      ✗ Errore Intelligence Report: {e}")
+                import traceback
+                traceback.print_exc()
+                intel_report_path = None
+        else:
+            print("\n[9/9] Intelligence Report Framework non disponibile")
 
         print("\n" + "=" * 60)
         print("INVESTIGAZIONE COMPLETATA")
         print("=" * 60)
         print(f"\nReport generati:")
-        print(f"  PDF:              {output_path}")
+        print(f"  PDF:                {output_path}")
         if docx_company_path:
-            print(f"  DOCX (Aziende):   {docx_company_path}")
+            print(f"  DOCX (Aziende):     {docx_company_path}")
         if docx_personal_path:
-            print(f"  DOCX (Personale): {docx_personal_path}")
+            print(f"  DOCX (Personale):   {docx_personal_path}")
+        if intel_report_path:
+            print(f"  DOCX (Intelligence): {intel_report_path}")
         print(f"\nSecurity Grade: {security_assessment.get('security_grade', 'N/A')}")
         print(f"Risk Level: {analysis.get('base_analysis', {}).get('exposure_level', 'N/A')}")
 
