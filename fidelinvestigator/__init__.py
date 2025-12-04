@@ -58,6 +58,14 @@ from .intelligence_integration import (
     generate_dutch_osint_report
 )
 
+# Unified Report Generator (Multi-format: HTML, DOCX, PDF)
+from .unified_report_generator import (
+    UnifiedReportGenerator,
+    UnifiedReportData,
+    PsychologicalProfile,
+    create_unified_report_from_osint
+)
+
 __all__ = [
     # Core Agent
     "FidelinvestigatorAI",
@@ -87,5 +95,10 @@ __all__ = [
     "generate_intelligence_report_docx",
     # Integration
     "IntelligenceReportIntegration",
-    "generate_dutch_osint_report"
+    "generate_dutch_osint_report",
+    # Unified Report Generator
+    "UnifiedReportGenerator",
+    "UnifiedReportData",
+    "PsychologicalProfile",
+    "create_unified_report_from_osint"
 ]
